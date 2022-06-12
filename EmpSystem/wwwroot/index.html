@@ -20,11 +20,12 @@
             </div>
             <div class="mb-3">
                 <label class="form-label" for="position">Position: </label>
-                <select name="position">
+                <!--<select name="position">
                     <option value="low">Low</option>
                     <option value="middle">Middle</option>
                     <option value="high">High</option>
-                </select>
+                </select>-->
+                <input class="form-control" name="position" />
             </div>
             <div class="mb-3">
                 <label for="salary" class="form-label">Salary:</label>
@@ -68,7 +69,7 @@
             }
 
             async function getEmployee(id) {
-                const response = await fetch("/empsystem/employees" + id, {
+                const response = await fetch("/empsystem/employees/" + id, {
                     method: "GET",
                     headers: { "Accept": "application/json" }
                 });
@@ -76,10 +77,170 @@
                 if (response.ok === true) {
                     const employee = await response.json();
                     const form = document.forms["employeesForm"];
-                    form.elements["id"].value = user.id;
-                    
+                    form.elements["id"].value = employee.id;
+                    form.elements["firstName"].value = employee.firstName;
+                    form.elements["lastName"].value = employee.lastName;
+                    form.elements["position"].value = employee.position;
+                    form.elements["salary"].value = employee.salary;
+                    form.elements["email"].value = employee.email;
+                    form.elements["phoneNumber"].value = employee.phoneNumber;
+                    form.elements["birthDate"].value = employee.birthDate;
+                } else {
+                    const error = await response.json();
+                    console.log(error.message);
                 }
             }
+
+            async function createEmployee(fname, lname, pos, sal, em, phonenum, birthdate) {
+                const response = await fetch("/empsystem/employees", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        firstName: fname,
+                        lastName: lname,
+                        position: pos,
+                        salary: parseInt(sal, 10),
+                        email: em,
+                        phoneNumber: phonenum,
+                        birthDate: birthdate
+                    })
+                });
+                if (response.ok === true) {
+                    const employee = await response.json();
+                    reset();
+                    document.querySelector("tbody").append(row(employee));
+                } else {
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function editEmployee(uid, fname, lname, pos, sal, em, phonenum, birthdate) {
+                const response = await fetch("empsystem/employees", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: uid,
+                        firstName: fname,
+                        lastName: lname,
+                        position: pos,
+                        salary: parseInt(sal, 10),
+                        email: em,
+                        phoneNumber: phonenum,
+                        birthDate: birthdate
+                    })
+                });
+                if (response.ok === true) {
+                    const employee = await response.json();
+                    reset();
+                    document.querySelector("tr[data-rowid='" + employee.id + "']").replaceWith(row(employee));
+                } else {
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function deleteEmployee(id) {
+                const response = await fetch("/empsystem/employees/" + id, {
+                    method: "DELETE",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const employee = await response.json();
+                    document.querySelector("tr[data-rowid='" + employee.id + "']").remove();
+                } else {
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            function reset() {
+                const form = document.forms["employeesForm"];
+                form.reset();
+                form.elements["id"].value = 0;
+            }
+
+            function row(employee) {
+                const tr = document.createElement("tr");
+                tr.setAttribute("data-rowid", employee.id);
+
+                const firstNameTd = document.createElement("td");
+                firstNameTd.append(employee.firstName);
+                tr.append(firstNameTd);
+
+                const lastNameTd = document.createElement("td");
+                lastNameTd.append(employee.lastName);
+                tr.append(lastNameTd);
+
+                const positionTd = document.createElement("td");
+                positionTd.append(employee.position);
+                tr.append(positionTd);
+
+                const salaryTd = document.createElement("td");
+                salaryTd.append(employee.salary);
+                tr.append(salaryTd);
+
+                const emailTd = document.createElement("td");
+                emailTd.append(employee.email);
+                tr.append(emailTd);
+
+                const phoneNumberTd = document.createElement("td");
+                phoneNumberTd.append(employee.phoneNumber);
+                tr.append(phoneNumberTd);
+
+                const birthDateTd = document.createElement("td");
+                birthDateTd.append(employee.birthDate)
+                tr.append(birthDateTd);
+
+                const linksTd = document.createElement("td");
+
+                const editLink = document.createElement("a");
+                editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+                editLink.append("Edit");
+                editLink.addEventListener("click", e => {
+                    e.preventDefault();
+                    getEmployee(employee.id);
+                });
+                linksTd.append(editLink);
+
+                const removeLink = document.createElement("a");
+                removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+                removeLink.append("Delete");
+                removeLink.addEventListener("click", e => {
+                    e.preventDefault();
+                    deleteEmployee(employee.id);
+                });
+
+                linksTd.append(removeLink);
+                tr.appendChild(linksTd);
+
+                return tr;
+            }
+
+            document.getElementById("reset").addEventListener("click", e => {
+                e.preventDefault();
+                reset();
+            });
+
+            document.forms["employeesForm"].addEventListener("click", e => {
+                e.preventDefault();
+                const form = document.forms["employeesForm"];
+                const id = form.elements["id"].value;
+                const firstName = form.elements["firstName"].value;
+                const lastName = form.elements["lastName"].value;
+                const position = form.elements["position"].value;
+                const salary = form.elements["salary"].value;
+                const email = form.elements["email"].value;
+                const phoneNumber = form.elements["phoneNumber"].value;
+                const birthDate = form.elements["birthDate"].value;
+
+                if (id == 0)
+                    createEmployee(firstName, lastName, position, salary, email, phoneNumber, birthDate);
+                else
+                    editEmployee(id, firstName, lastName, position, salary, email, phoneNumber, birthDate);
+            });
+
+            getEmployees();
         </script>
     </body>
 </html>
